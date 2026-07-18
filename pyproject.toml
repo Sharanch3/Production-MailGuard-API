@@ -1,0 +1,41 @@
+[project]
+name = "pmg-api"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "dagshub>=0.7.1",
+    "dvc[s3]>=3.67.1",
+    "en-core-web-sm",
+    "fastapi>=0.139.2",
+    "mlflow==3.14.0",
+    "pandas>=2.3.3",
+    "python-dotenv>=1.2.2",
+    "scikit-learn>=1.9.0",
+    "spacy>=3.8.14",
+    "xgboost>=3.3.0",
+]
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.3.0",
+    "matplotlib>=3.11.0",
+    "ruff>=0.15.22",
+    "seaborn>=0.13.2",
+]
+
+[tool.ruff]
+line-length = 90
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "I"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.uv.sources]
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+

@@ -1,0 +1,26 @@
+2026-07-17 19:52:49 - model-evaluation - DEBUG - Model Loaded form from path C:/Users/Saran/Desktop/PROJECTS/PMG-API/artifacts/model.joblib
+2026-07-17 19:52:50 - model-evaluation - DEBUG - Loaded data from C:/Users/Saran/Desktop/PROJECTS/PMG-API/data/processed/test_tfidf.csv
+2026-07-17 19:52:50 - model-evaluation - DEBUG - Model evaluation metrics calculated
+2026-07-17 19:52:50 - model-evaluation - INFO - Metrics saved to C:\Users\Saran\Desktop\PROJECTS\PMG-API\reports\metrics.json
+2026-07-17 19:52:50 - model-evaluation - ERROR - Failed to register model
+Traceback (most recent call last):
+  File "C:\Users\Saran\Desktop\PROJECTS\PMG-API\src\model_evaluation.py", line 115, in register_model
+    token = os.environ["DAGSHUB_PAT"]
+            ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<frozen os>", line 716, in __getitem__
+KeyError: 'DAGSHUB_PAT'
+2026-07-17 19:52:50 - model-evaluation - ERROR - Failed to complete the model evaluation process
+Traceback (most recent call last):
+  File "C:\Users\Saran\Desktop\PROJECTS\PMG-API\src\model_evaluation.py", line 173, in main
+    register_model(model= lr, metrics= metrics)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Saran\Desktop\PROJECTS\PMG-API\src\model_evaluation.py", line 115, in register_model
+    token = os.environ["DAGSHUB_PAT"]
+            ~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "<frozen os>", line 716, in __getitem__
+KeyError: 'DAGSHUB_PAT'
+2026-07-17 19:54:44 - model-evaluation - DEBUG - Model Loaded form from path C:/Users/Saran/Desktop/PROJECTS/PMG-API/artifacts/model.joblib
+2026-07-17 19:54:45 - model-evaluation - DEBUG - Loaded data from C:/Users/Saran/Desktop/PROJECTS/PMG-API/data/processed/test_tfidf.csv
+2026-07-17 19:54:45 - model-evaluation - DEBUG - Model evaluation metrics calculated
+2026-07-17 19:54:45 - model-evaluation - INFO - Metrics saved to C:\Users\Saran\Desktop\PROJECTS\PMG-API\reports\metrics.json
+2026-07-17 19:55:05 - model-evaluation - INFO - Model registered Successfully!

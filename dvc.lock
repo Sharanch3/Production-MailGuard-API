@@ -1,0 +1,111 @@
+schema: '2.0'
+stages:
+  data-ingestion:
+    cmd: python src/data_ingestion.py
+    deps:
+    - path: src/data_ingestion.py
+      hash: md5
+      md5: bc27a21445356898f0f879bc525e0871
+      size: 2157
+    params:
+      params.yaml:
+        data-ingestion.test_size: 0.2
+    outs:
+    - path: data/raw
+      hash: md5
+      md5: 07f0904b81d916149ac3e0ed2aed3216.dir
+      size: 25213721
+      nfiles: 2
+  data_preprocessing:
+    cmd: python src/data_preprocessing.py
+    deps:
+    - path: data/raw
+      hash: md5
+      md5: 07f0904b81d916149ac3e0ed2aed3216.dir
+      size: 25213721
+      nfiles: 2
+    - path: src/data_preprocessing.py
+      hash: md5
+      md5: 5fd679e7c3987e8bc3226b130a513bb3
+      size: 3142
+    outs:
+    - path: data/interim/test_processed.csv
+      hash: md5
+      md5: f21277ba66c05e4271b48843cadceff8
+      size: 2961330
+    - path: data/interim/train_processed.csv
+      hash: md5
+      md5: 690b6a5a3072ee96fc478217ef6d5852
+      size: 11873928
+  feature-engineering:
+    cmd: python src/feature_engineering.py
+    deps:
+    - path: data/interim/test_processed.csv
+      hash: md5
+      md5: f21277ba66c05e4271b48843cadceff8
+      size: 2961330
+    - path: data/interim/train_processed.csv
+      hash: md5
+      md5: 690b6a5a3072ee96fc478217ef6d5852
+      size: 11873928
+    - path: src/feature_engineering.py
+      hash: md5
+      md5: 212cc1cd701f73fa26c5f6094aabbd2d
+      size: 3751
+    params:
+      params.yaml:
+        feature-engineering.max_features: 2000
+    outs:
+    - path: artifacts/vectorizer.joblib
+      hash: md5
+      md5: a168f58128363f0fa7cce2d3e40f681a
+      size: 25474
+    - path: data/processed/test_tfidf.csv
+      hash: md5
+      md5: e4c188de8ffde6d6c9ce39ff05b95e01
+      size: 106431830
+    - path: data/processed/train_tfidf.csv
+      hash: md5
+      md5: 4d9c98defacd980c3df73031e89df82f
+      size: 425718249
+  model_building:
+    cmd: python src/model_building.py
+    deps:
+    - path: data/processed/test_tfidf.csv
+      hash: md5
+      md5: e4c188de8ffde6d6c9ce39ff05b95e01
+      size: 106431830
+    - path: data/processed/train_tfidf.csv
+      hash: md5
+      md5: 4d9c98defacd980c3df73031e89df82f
+      size: 425718249
+    - path: src/model_building.py
+      hash: md5
+      md5: 67af5b8b22f1e5f5a541f1bd06fce3c8
+      size: 3151
+    params:
+      params.yaml:
+        model-building.penalty: l2
+        model-building.random_state: 42
+        model-building.solver: liblinear
+    outs:
+    - path: artifacts/model.joblib
+      hash: md5
+      md5: 9b2e9bf9fd616e42ec8a7aed9d421b5b
+      size: 16859
+  model-evaluation:
+    cmd: python src/model_evaluation.py
+    deps:
+    - path: artifacts/model.joblib
+      hash: md5
+      md5: 9b2e9bf9fd616e42ec8a7aed9d421b5b
+      size: 16859
+    - path: src/model_evaluation.py
+      hash: md5
+      md5: b943b45d1723892149bc04e85f7854ae
+      size: 4897
+    outs:
+    - path: reports/metrics.json
+      hash: md5
+      md5: bc2f4fdfe9ecb9dcf65aaad349153f16
+      size: 85

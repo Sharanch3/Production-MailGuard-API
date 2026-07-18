@@ -1,0 +1,12 @@
+2026-07-17 19:40:49 - preprocessing - DEBUG - Data Loaded properly
+2026-07-17 19:40:49 - preprocessing - DEBUG - Starting Preprocessing the Data
+2026-07-17 19:40:50 - preprocessing - DEBUG - Removed Duplicated rows.
+2026-07-17 19:40:50 - preprocessing - DEBUG - Removed nan values.
+2026-07-17 19:40:50 - preprocessing - DEBUG - Encoding successfully done.
+2026-07-17 19:44:33 - preprocessing - INFO - Text Column Transformed.
+2026-07-17 19:44:33 - preprocessing - DEBUG - Starting Preprocessing the Data
+2026-07-17 19:44:33 - preprocessing - DEBUG - Removed Duplicated rows.
+2026-07-17 19:44:33 - preprocessing - DEBUG - Removed nan values.
+2026-07-17 19:44:33 - preprocessing - DEBUG - Encoding successfully done.
+2026-07-17 19:45:29 - preprocessing - INFO - Text Column Transformed.
+2026-07-17 19:45:29 - preprocessing - INFO - Processed data saved to C:\Users\Saran\Desktop\PROJECTS\PMG-API\data\interim

@@ -1,0 +1,5 @@
+2026-07-17 19:52:43 - model-building - DEBUG - Data loaded from C:\Users\Saran\Desktop\PROJECTS\PMG-API\data\processed\train_tfidf.csv with shape (47840, 2001)
+2026-07-17 19:52:43 - model-building - DEBUG - Initializing Logistic Regression Model with Parameters
+2026-07-17 19:52:43 - model-building - DEBUG - Model Training started with (47840, 2000) data size
+2026-07-17 19:52:44 - model-building - INFO - Model Training Completed.
+2026-07-17 19:52:44 - model-building - DEBUG - Model Saved to C:\Users\Saran\Desktop\PROJECTS\PMG-API\artifacts\model.joblib

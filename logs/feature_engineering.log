@@ -1,0 +1,5 @@
+2026-07-17 19:51:53 - feature-engineering - DEBUG - Data Loaded from C:/Users/Saran/Desktop/PROJECTS/PMG-API/data/interim/train_processed.csv
+2026-07-17 19:51:53 - feature-engineering - DEBUG - Data Loaded from C:/Users/Saran/Desktop/PROJECTS/PMG-API/data/interim/test_processed.csv
+2026-07-17 19:51:55 - feature-engineering - INFO - TFIDF applied and Data Transformed
+2026-07-17 19:52:26 - feature-engineering - DEBUG - Data saved to train_tfidf.csv
+2026-07-17 19:52:34 - feature-engineering - DEBUG - Data saved to test_tfidf.csv
