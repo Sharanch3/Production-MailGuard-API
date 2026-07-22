@@ -1,9 +1,12 @@
+import csv
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 import uvicorn
 from fastapi import FastAPI, HTTPException
-from schemas import EmailInput, HealthResponse, PredictionOutput
-from utility import load_model_from_mr, load_nlp, load_vectorizer, preprocessor
+
+from app.schemas import EmailInput, HealthResponse, PredictionOutput
+from app.utility import load_model_from_mr, load_nlp, load_vectorizer, preprocessor
 
 
 @asynccontextmanager
@@ -82,9 +85,24 @@ async def predict(request: EmailInput):
 
         probabilities = app.state.model.predict_proba(X)[0]
 
-        # Fromat response
+        # Format response
         label = "Spam" if prediction == 1 else "Not Spam"
         confidence = float(probabilities[prediction] * 100)
+
+        # Audit
+        AUD_DIR = Path(__file__).parent.parent / "audit"
+        AUD_DIR.mkdir(exist_ok=True)
+        AUD_FILE = AUD_DIR / "emails.csv"
+
+        file_exists = AUD_FILE.exists()
+
+        with open(file=AUD_FILE, mode="a", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+
+            if not file_exists:
+                writer.writerow(["email", "label"])
+
+            writer.writerow([request.text, label])
 
         return {
             "prediction": label,
