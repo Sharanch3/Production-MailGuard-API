@@ -8,6 +8,8 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 
 <br/>
 
+[![Live Demo](https://img.shields.io/badge/Live_Demo-54.83.143.31%3A8000-success?style=for-the-badge&logo=amazonaws&logoColor=white)](http://54.83.143.31:8000/docs)
+
 [![Python](https://img.shields.io/badge/Python-3.13-3776AB?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.139-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
@@ -15,7 +17,9 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 [![MLflow](https://img.shields.io/badge/MLflow-3.14-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![DVC](https://img.shields.io/badge/DVC-3.67-945DD6?style=for-the-badge&logo=dvc&logoColor=white)](https://dvc.org/)
 [![DagsHub](https://img.shields.io/badge/DagsHub-Model_Registry-FF6600?style=for-the-badge)](https://dagshub.com/)
-[![AWS S3](https://img.shields.io/badge/AWS_S3-DVC_Remote-232F3E?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![AWS S3](https://img.shields.io/badge/AWS_S3-DVC_Remote_%26_Config-232F3E?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![AWS ECR](https://img.shields.io/badge/AWS_ECR-Image_Registry-232F3E?style=for-the-badge&logo=amazonecs&logoColor=white)](https://aws.amazon.com/ecr/)
+[![AWS EC2](https://img.shields.io/badge/AWS_EC2-Deployed-232F3E?style=for-the-badge&logo=amazonec2&logoColor=white)](https://aws.amazon.com/ec2/)
 [![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![uv](https://img.shields.io/badge/uv-package_manager-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
 [![Pandas](https://img.shields.io/badge/Pandas-2.3-150458?style=for-the-badge&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
@@ -35,6 +39,7 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 ## 📖 Table of Contents
 
 - [Overview](#-overview)
+- [Live Demo](#-live-demo)
 - [Architecture](#-architecture)
 - [Tech Stack](#-tech-stack)
 - [Project Structure](#-project-structure)
@@ -46,6 +51,7 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
   - [Reproducing the Pipeline](#reproducing-the-pipeline)
   - [Running the API](#running-the-api)
 - [Running with Docker](#-running-with-docker)
+- [Production Deployment (AWS EC2 + ECR)](#-production-deployment-aws-ec2--ecr)
 - [API Reference](#-api-reference)
 - [Model Details](#-model-details)
 - [Configuration](#-configuration)
@@ -70,8 +76,29 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 6. **Serving** — a **FastAPI** application loads the registered model, the TF-IDF vectorizer, and the spaCy pipeline at startup and exposes a REST API for real-time spam classification.
 7. **Auditing** — every `/predict` call is appended to a persisted `audit/emails.csv` file (input text + predicted label), giving a lightweight, inspectable trail of what the model has classified in production.
 8. **Containerization** — the API ships with a **Dockerfile** and **Docker Compose** setup, so the whole service can be built and run as a single container with the audit log bind-mounted to the host.
+9. **Deployment** — the container image is pushed to **AWS ECR** and pulled/run on an **AWS EC2** instance via `docker compose`, making the API publicly reachable and continuously collecting live audit data.
 
 Every pipeline stage is version-controlled and reproducible via **DVC**, with raw/interim/processed data and model artifacts tracked and stored on an **AWS S3** remote.
+
+---
+
+## 🌐 Live Demo
+
+The API is deployed and publicly reachable on an **AWS EC2** instance:
+
+- **Base URL:** [`http://54.83.143.31:8000`](http://54.83.143.31:8000)
+- **Interactive Swagger docs:** [`http://54.83.143.31:8000/docs`](http://54.83.143.31:8000/docs)
+- **Health check:** [`http://54.83.143.31:8000/health`](http://54.83.143.31:8000/health)
+
+```bash
+curl -X POST http://54.83.143.31:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"text": "Congratulations! You have won a $1000 gift card, click here to claim now!!!"}'
+```
+
+> ⚠️ This points at a specific EC2 instance's public IPv4 address, which is **not** an Elastic IP — it can change if the instance is stopped/restarted. If the link above is unreachable, the instance may have been stopped or reassigned a new address.
+
+Every request made against the live demo is logged to the server's `audit/emails.csv` (see [Request Auditing](#-request-auditing)), so the live deployment is also continuously accumulating real inference data.
 
 ---
 
@@ -117,9 +144,33 @@ Every pipeline stage is version-controlled and reproducible via **DVC**, with ra
                                               │  JSON
                                               ▼
                                      Client / Consumer App
+
+                         ┌─────────────────────────────────────────────────────────┐
+                         │                 DEPLOYMENT (AWS)                        │
+                         │                                                         │
+                         │   docker build ──▶ AWS ECR (image registry)             │
+                         │                         │                               │
+                         │                         │ docker pull                   │
+                         │                         ▼                               │
+                         │              AWS EC2 instance                           │
+                         │   ┌─────────────────────────────────────────────────┐   │
+                         │   │  compose.yaml + .env  (fetched from AWS S3)      │   │
+                         │   │        │                                        │   │
+                         │   │        ▼                                        │   │
+                         │   │  docker compose up  →  mailguard container       │   │
+                         │   │        │                    │                   │   │
+                         │   │        │           bind mount ./audit           │   │
+                         │   │        ▼                    ▼                   │   │
+                         │   │  :8000 exposed        audit/emails.csv           │   │
+                         │   │  (public IP)         (persists on host)          │   │
+                         │   └─────────────────────────────────────────────────┘   │
+                         └─────────────────────────────────────────────────────────┘
+                                              │
+                                              ▼
+                          Live: http://54.83.143.31:8000
 ```
 
-Raw, interim, and processed datasets — along with the trained model and vectorizer — are all tracked by **DVC** and pushed to an **S3 remote (`s3://sharanch-dvc-bucket`)**, keeping the Git repository lightweight while preserving full data/model lineage.
+Raw, interim, and processed datasets — along with the trained model and vectorizer — are all tracked by **DVC** and pushed to an **S3 remote (`s3://sharanch-dvc-bucket`)**, keeping the Git repository lightweight while preserving full data/model lineage. **AWS S3** is now also used to store the deployment-time `compose.yaml` and `.env` files, which are pulled onto the EC2 instance's working directory before `docker compose up` is run.
 
 ---
 
@@ -134,10 +185,12 @@ Raw, interim, and processed datasets — along with the trained model and vector
 | ![spaCy](https://img.shields.io/badge/-spaCy-09A3D5?style=flat-square&logo=spacy&logoColor=white) | **spaCy (`en_core_web_sm`)** | Text cleaning, lemmatization, stopword removal |
 | ![Pandas](https://img.shields.io/badge/-Pandas-150458?style=flat-square&logo=pandas&logoColor=white) | **Pandas** | Data manipulation |
 | ![DVC](https://img.shields.io/badge/-DVC-945DD6?style=flat-square&logo=dvc&logoColor=white) | **DVC** | Data & pipeline versioning (`dvc.yaml`, `dvc.lock`) |
-| ![AWS S3](https://img.shields.io/badge/-AWS_S3-232F3E?style=flat-square&logo=amazons3&logoColor=white) | **AWS S3** | Remote storage backend for DVC artifacts |
+| ![AWS S3](https://img.shields.io/badge/-AWS_S3-232F3E?style=flat-square&logo=amazons3&logoColor=white) | **AWS S3** | Remote storage for DVC artifacts, and for deployment config (`compose.yaml`, `.env`) pulled onto EC2 |
 | ![MLflow](https://img.shields.io/badge/-MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white) | **MLflow** | Experiment tracking, metric/param logging, model registry |
 | ![DagsHub](https://img.shields.io/badge/-DagsHub-FF6600?style=flat-square) | **DagsHub** | Hosted MLflow tracking server & model registry backend |
 | ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white) | **Docker / Docker Compose** | Containerized build & runtime (`Dockerfile`, `compose.yaml`) |
+| ![AWS ECR](https://img.shields.io/badge/-AWS_ECR-232F3E?style=flat-square&logo=amazonecs&logoColor=white) | **AWS ECR** | Private registry hosting the built `mailguard` image |
+| ![AWS EC2](https://img.shields.io/badge/-AWS_EC2-232F3E?style=flat-square&logo=amazonec2&logoColor=white) | **AWS EC2** | Compute instance running the deployed container |
 | ![uv](https://img.shields.io/badge/-uv-DE5FE9?style=flat-square&logo=uv&logoColor=white) | **uv** | Fast Python package & environment manager (`uv.lock`) |
 | ![Ruff](https://img.shields.io/badge/-Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black) | **Ruff** | Linting & code formatting |
 | ![dotenv](https://img.shields.io/badge/-python--dotenv-ECD53F?style=flat-square&logo=python&logoColor=black) | **python-dotenv** | Environment variable / secrets management |
@@ -285,21 +338,39 @@ On startup, the app loads three resources once into memory (`app.state`):
 
 ## 🐳 Running with Docker
 
-The API can also be built and run as a container, using **uv** inside the image for fast, reproducible dependency installation.
+The API is packaged as a Docker image using **uv** for fast, reproducible dependency installation. The current `compose.yaml` in this repo is configured for **production** — it pulls the image from **AWS ECR** rather than building locally (see [Production Deployment](#-production-deployment-aws-ec2--ecr) for how that image gets there).
 
-### Build & run with Docker Compose (recommended)
+### Run the published image with Docker Compose
 
 ```bash
-docker compose up --build
+docker compose up
 ```
 
-This uses `compose.yaml`, which:
-- Builds the image from the local `Dockerfile` and tags it `sharanch33/mailguard:latest`
+`compose.yaml`:
+```yaml
+services:
+  mailguard:
+    image: 707578706440.dkr.ecr.us-east-1.amazonaws.com/sharanch33/mailguard:latest
+    container_name: mailguard
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - type: bind
+        source: ./audit/
+        target: /pmg-api/audit/
+```
+
+This:
+- Pulls the pre-built image from the private **AWS ECR** repository (requires `docker login` to ECR — see below)
 - Loads secrets (e.g. `DAGSHUB_PAT`) from a local `.env` file via `env_file`
 - Publishes the API on `http://localhost:8000`
 - Bind-mounts `./audit` on the host to `/pmg-api/audit` in the container, so the prediction **audit log persists outside the container**
 
-### Build & run with plain Docker
+### Build the image locally instead
+
+If you want to build from source rather than pull from ECR (e.g. for local development), use the `Dockerfile` directly:
 
 ```bash
 docker build -t mailguard .
@@ -317,6 +388,45 @@ docker run -d \
 - Installs `uv`, then runs `uv sync --frozen --no-dev` for a fast, locked, production-only install (dev dependencies like `ruff`, `matplotlib`, `ipykernel` are excluded)
 - Copies in only what's needed to serve the model: `app/` and `artifacts/` (training code, data, and notebooks are **not** shipped in the image)
 - Exposes port `8000` and starts the API with `uv run uvicorn app.app:app --host 0.0.0.0 --port 8000`
+
+---
+
+## ☁️ Production Deployment (AWS EC2 + ECR)
+
+The live deployment (see [Live Demo](#-live-demo)) follows this workflow:
+
+1. **Build & push to ECR**
+   ```bash
+   docker build -t mailguard .
+   docker tag mailguard:latest 707578706440.dkr.ecr.us-east-1.amazonaws.com/sharanch33/mailguard:latest
+
+   aws ecr get-login-password --region us-east-1 \
+     | docker login --username AWS --password-stdin 707578706440.dkr.ecr.us-east-1.amazonaws.com
+
+   docker push 707578706440.dkr.ecr.us-east-1.amazonaws.com/sharanch33/mailguard:latest
+   ```
+
+2. **Stage deployment config in S3** — `compose.yaml` and `.env` are uploaded to an S3 bucket, decoupling deployment configuration from the EC2 instance itself.
+
+3. **Provision & configure the EC2 instance** — Docker (and Docker Compose) installed on the instance, and the instance's IAM role/credentials granted `ecr:GetAuthorizationToken` + pull access to the ECR repository.
+
+4. **Pull config and run on EC2**
+   ```bash
+   # On the EC2 instance, inside the working directory
+   aws s3 cp s3://<bucket-name>/compose.yaml .
+   aws s3 cp s3://<bucket-name>/.env .
+
+   aws ecr get-login-password --region us-east-1 \
+     | docker login --username AWS --password-stdin 707578706440.dkr.ecr.us-east-1.amazonaws.com
+
+   docker compose up -d
+   ```
+
+5. **Result** — the container runs on the instance with port `8000` exposed to the internet (via the instance's security group), and `./audit` bind-mounted so `audit/emails.csv` persists on the EC2 host across container restarts, redeploys, and image updates.
+
+**Redeploying a new version** is just: rebuild → push to ECR with the same tag → on the EC2 host run `docker compose pull && docker compose up -d` to pull the new image and recreate the container.
+
+> **Note on the audit log across deployments:** since `audit/` is bind-mounted to the EC2 host's filesystem (not baked into the image), the audit trail survives image updates and container restarts — but it lives only on that one instance's disk. It is **not** currently backed up to S3 or any other durable store, so a lost or terminated instance means a lost audit log. This would be a natural next improvement (see [Roadmap](#-roadmap)).
 
 ---
 
@@ -474,6 +584,7 @@ This gives a simple, human-readable trail of everything the deployed model has c
 
 - Locally, the file lives at `audit/emails.csv` relative to the project root.
 - In Docker, `audit/` is bind-mounted to the host (see [Running with Docker](#-running-with-docker)), so the log survives container restarts and rebuilds.
+- On the **live EC2 deployment**, this same bind mount means every request sent to [`http://54.83.143.31:8000/predict`](#-live-demo) is being logged in real time to `audit/emails.csv` on the instance — the live app is actively collecting real inference data, not just serving predictions.
 - `audit/emails.csv` is git-ignored — only the empty `audit/` directory (via `audit/.gitignore`) is tracked in version control.
 
 ---
@@ -499,8 +610,12 @@ Format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
 - [x] Add a `Dockerfile` + container image for deployment
 - [x] Add Docker Compose setup with persisted audit log volume
 - [x] Add request auditing (`audit/emails.csv`)
-- [ ] Add CI/CD workflow (lint, test, `dvc repro`, Docker build on PR)
-- [ ] Push the Docker image to a registry (Docker Hub / GHCR) as part of CI
+- [x] Push the Docker image to a registry (**AWS ECR**) as part of the release flow
+- [x] Deploy the container to a live host (**AWS EC2**)
+- [ ] Automate the ECR build/push + EC2 deploy steps into a CI/CD workflow instead of running them manually
+- [ ] Assign an Elastic IP (or put the instance behind a load balancer / DNS name) so the public URL doesn't change on instance restart
+- [ ] Back up `audit/emails.csv` off the EC2 host (e.g. periodic sync to S3) so audit data survives instance loss
+- [ ] Add HTTPS/TLS in front of the API (e.g. via a reverse proxy or load balancer) — it's currently served over plain HTTP
 - [ ] Add batch prediction endpoint (`/predict/batch`)
 - [ ] Add automated test suite (`pytest`)
 - [ ] Add authentication/rate-limiting to the API
