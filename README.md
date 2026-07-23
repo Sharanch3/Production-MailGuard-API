@@ -12,11 +12,11 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.139-009688?style=for-the-badge&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![scikit-learn](https://img.shields.io/badge/scikit--learn-1.9-F7931E?style=for-the-badge&logo=scikitlearn&logoColor=white)](https://scikit-learn.org/)
 [![spaCy](https://img.shields.io/badge/spaCy-3.8-09A3D5?style=for-the-badge&logo=spacy&logoColor=white)](https://spacy.io/)
-[![XGBoost](https://img.shields.io/badge/XGBoost-3.3-337AB7?style=for-the-badge&logo=xgboost&logoColor=white)](https://xgboost.readthedocs.io/)
 [![MLflow](https://img.shields.io/badge/MLflow-3.14-0194E2?style=for-the-badge&logo=mlflow&logoColor=white)](https://mlflow.org/)
 [![DVC](https://img.shields.io/badge/DVC-3.67-945DD6?style=for-the-badge&logo=dvc&logoColor=white)](https://dvc.org/)
 [![DagsHub](https://img.shields.io/badge/DagsHub-Model_Registry-FF6600?style=for-the-badge)](https://dagshub.com/)
 [![AWS S3](https://img.shields.io/badge/AWS_S3-DVC_Remote-232F3E?style=for-the-badge&logo=amazons3&logoColor=white)](https://aws.amazon.com/s3/)
+[![Docker](https://img.shields.io/badge/Docker-Containerized-2496ED?style=for-the-badge&logo=docker&logoColor=white)](https://www.docker.com/)
 [![uv](https://img.shields.io/badge/uv-package_manager-DE5FE9?style=for-the-badge&logo=uv&logoColor=white)](https://docs.astral.sh/uv/)
 [![Pandas](https://img.shields.io/badge/Pandas-2.3-150458?style=for-the-badge&logo=pandas&logoColor=white)](https://pandas.pydata.org/)
 [![Pydantic](https://img.shields.io/badge/Pydantic-Validated-E92063?style=for-the-badge&logo=pydantic&logoColor=white)](https://docs.pydantic.dev/)
@@ -45,10 +45,12 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
   - [Environment Variables](#environment-variables)
   - [Reproducing the Pipeline](#reproducing-the-pipeline)
   - [Running the API](#running-the-api)
+- [Running with Docker](#-running-with-docker)
 - [API Reference](#-api-reference)
 - [Model Details](#-model-details)
 - [Configuration](#-configuration)
 - [Experiment Tracking](#-experiment-tracking)
+- [Request Auditing](#-request-auditing)
 - [Logging](#-logging)
 - [Roadmap](#-roadmap)
 - [Contributing](#-contributing)
@@ -66,6 +68,8 @@ Built with **FastAPI**, versioned with **DVC**, tracked with **MLflow / DagsHub*
 4. **Model Building** — trains a **Logistic Regression** classifier on the TF-IDF features.
 5. **Model Evaluation & Registry** — computes accuracy/precision/recall/AUC and logs the run (metrics, params, model) to **MLflow**, registering the model in the **DagsHub Model Registry**.
 6. **Serving** — a **FastAPI** application loads the registered model, the TF-IDF vectorizer, and the spaCy pipeline at startup and exposes a REST API for real-time spam classification.
+7. **Auditing** — every `/predict` call is appended to a persisted `audit/emails.csv` file (input text + predicted label), giving a lightweight, inspectable trail of what the model has classified in production.
+8. **Containerization** — the API ships with a **Dockerfile** and **Docker Compose** setup, so the whole service can be built and run as a single container with the audit log bind-mounted to the host.
 
 Every pipeline stage is version-controlled and reproducible via **DVC**, with raw/interim/processed data and model artifacts tracked and stored on an **AWS S3** remote.
 
@@ -127,13 +131,13 @@ Raw, interim, and processed datasets — along with the trained model and vector
 | ![FastAPI](https://img.shields.io/badge/-FastAPI-009688?style=flat-square&logo=fastapi&logoColor=white) | **FastAPI + Uvicorn** | REST API framework & ASGI server |
 | ![Pydantic](https://img.shields.io/badge/-Pydantic-E92063?style=flat-square&logo=pydantic&logoColor=white) | **Pydantic** | Request/response schema validation |
 | ![scikit-learn](https://img.shields.io/badge/-scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white) | **scikit-learn** | TF-IDF vectorization & Logistic Regression model |
-| ![XGBoost](https://img.shields.io/badge/-XGBoost-337AB7?style=flat-square&logo=xgboost&logoColor=white) | **XGBoost** | Experimental/alternate model candidate |
 | ![spaCy](https://img.shields.io/badge/-spaCy-09A3D5?style=flat-square&logo=spacy&logoColor=white) | **spaCy (`en_core_web_sm`)** | Text cleaning, lemmatization, stopword removal |
 | ![Pandas](https://img.shields.io/badge/-Pandas-150458?style=flat-square&logo=pandas&logoColor=white) | **Pandas** | Data manipulation |
 | ![DVC](https://img.shields.io/badge/-DVC-945DD6?style=flat-square&logo=dvc&logoColor=white) | **DVC** | Data & pipeline versioning (`dvc.yaml`, `dvc.lock`) |
 | ![AWS S3](https://img.shields.io/badge/-AWS_S3-232F3E?style=flat-square&logo=amazons3&logoColor=white) | **AWS S3** | Remote storage backend for DVC artifacts |
 | ![MLflow](https://img.shields.io/badge/-MLflow-0194E2?style=flat-square&logo=mlflow&logoColor=white) | **MLflow** | Experiment tracking, metric/param logging, model registry |
 | ![DagsHub](https://img.shields.io/badge/-DagsHub-FF6600?style=flat-square) | **DagsHub** | Hosted MLflow tracking server & model registry backend |
+| ![Docker](https://img.shields.io/badge/-Docker-2496ED?style=flat-square&logo=docker&logoColor=white) | **Docker / Docker Compose** | Containerized build & runtime (`Dockerfile`, `compose.yaml`) |
 | ![uv](https://img.shields.io/badge/-uv-DE5FE9?style=flat-square&logo=uv&logoColor=white) | **uv** | Fast Python package & environment manager (`uv.lock`) |
 | ![Ruff](https://img.shields.io/badge/-Ruff-D7FF64?style=flat-square&logo=ruff&logoColor=black) | **Ruff** | Linting & code formatting |
 | ![dotenv](https://img.shields.io/badge/-python--dotenv-ECD53F?style=flat-square&logo=python&logoColor=black) | **python-dotenv** | Environment variable / secrets management |
@@ -147,7 +151,7 @@ Raw, interim, and processed datasets — along with the trained model and vector
 ```
 Production-MailGuard-API/
 ├── app/                          # FastAPI application
-│   ├── app.py                    # API routes & lifespan (model loading)
+│   ├── app.py                    # API routes & lifespan (model loading, audit logging)
 │   ├── schemas.py                # Pydantic request/response models
 │   └── utility.py                # Model/vectorizer/NLP loading + preprocessing
 │
@@ -165,10 +169,13 @@ Production-MailGuard-API/
 │   └── processed/                # TF-IDF feature matrices (DVC-tracked)
 │
 ├── artifacts/                    # vectorizer.joblib, model.joblib (DVC-tracked)
+├── audit/                        # emails.csv — logged prediction requests (bind-mounted in Docker)
 ├── reports/                      # metrics.json (evaluation output)
 ├── logs/                         # Per-stage rotating log files
 ├── expirements/                  # Notebook/experiment scratch space
 │
+├── Dockerfile                    # Container image definition for the API
+├── compose.yaml                  # Docker Compose service definition (build, ports, audit volume)
 ├── dvc.yaml                      # DVC pipeline stage definitions
 ├── dvc.lock                      # DVC pipeline lockfile (hashes, deps, outs)
 ├── params.yaml                   # Centralized hyperparameters
@@ -220,6 +227,7 @@ dvc pull
 - [`uv`](https://docs.astral.sh/uv/) package manager
 - AWS credentials configured (for `dvc pull`/`dvc push` against the S3 remote)
 - A [DagsHub](https://dagshub.com/) account + access token (for MLflow tracking & model registry)
+- [Docker](https://www.docker.com/) + Docker Compose (optional, only needed for containerized deployment)
 
 ### Installation
 
@@ -248,7 +256,7 @@ Create a `.env` file in the project root:
 DAGSHUB_PAT=your_dagshub_access_token
 ```
 
-This token is used to authenticate with DagsHub for MLflow experiment tracking and model registry access (`src/model_evaluation.py`, `app/utility.py`).
+This token is used to authenticate with DagsHub for MLflow experiment tracking and model registry access (`src/model_evaluation.py`, `app/utility.py`). The same `.env` file is reused by `compose.yaml` (via `env_file`) when running the API in Docker.
 
 ### Reproducing the Pipeline
 
@@ -260,12 +268,7 @@ This runs ingestion → preprocessing → feature engineering → model building
 
 ### Running the API
 
-```bash
-cd app
-python app.py
-```
-
-Or directly with Uvicorn:
+Run from the **project root** (the `app/` module now uses package-relative imports — `from app.schemas import ...` / `from app.utility import ...` — so it must be launched as part of the `app` package, not as a standalone script inside `app/`):
 
 ```bash
 uvicorn app.app:app --host 127.0.0.1 --port 8000 --reload
@@ -277,6 +280,43 @@ On startup, the app loads three resources once into memory (`app.state`):
 - ✅ Trained Logistic Regression model (pulled from the MLflow Model Registry)
 - ✅ Fitted TF-IDF vectorizer (`artifacts/vectorizer.joblib`)
 - ✅ spaCy NLP pipeline (`en_core_web_sm`, parser/NER disabled for speed)
+
+---
+
+## 🐳 Running with Docker
+
+The API can also be built and run as a container, using **uv** inside the image for fast, reproducible dependency installation.
+
+### Build & run with Docker Compose (recommended)
+
+```bash
+docker compose up --build
+```
+
+This uses `compose.yaml`, which:
+- Builds the image from the local `Dockerfile` and tags it `sharanch33/mailguard:latest`
+- Loads secrets (e.g. `DAGSHUB_PAT`) from a local `.env` file via `env_file`
+- Publishes the API on `http://localhost:8000`
+- Bind-mounts `./audit` on the host to `/pmg-api/audit` in the container, so the prediction **audit log persists outside the container**
+
+### Build & run with plain Docker
+
+```bash
+docker build -t mailguard .
+docker run -d \
+  --name mailguard \
+  -p 8000:8000 \
+  --env-file .env \
+  -v $(pwd)/audit:/pmg-api/audit \
+  mailguard
+```
+
+### What the image does
+
+- Base image: `python:3.13-slim-bookworm`
+- Installs `uv`, then runs `uv sync --frozen --no-dev` for a fast, locked, production-only install (dev dependencies like `ruff`, `matplotlib`, `ipykernel` are excluded)
+- Copies in only what's needed to serve the model: `app/` and `artifacts/` (training code, data, and notebooks are **not** shipped in the image)
+- Exposes port `8000` and starts the API with `uv run uvicorn app.app:app --host 0.0.0.0 --port 8000`
 
 ---
 
@@ -421,6 +461,23 @@ mlflow.sklearn.load_model(model_uri="models:/MailGuard-API/1")
 
 ---
 
+## 🧾 Request Auditing
+
+Every successful call to `POST /predict` is appended as a new row to `audit/emails.csv` (created automatically on first request):
+
+| Column | Description |
+|---|---|
+| `email` | The raw input text submitted for classification |
+| `label` | The predicted label (`Spam` / `Not Spam`) |
+
+This gives a simple, human-readable trail of everything the deployed model has classified — useful for spot-checking predictions, building a future retraining dataset, or debugging misclassifications in production.
+
+- Locally, the file lives at `audit/emails.csv` relative to the project root.
+- In Docker, `audit/` is bind-mounted to the host (see [Running with Docker](#-running-with-docker)), so the log survives container restarts and rebuilds.
+- `audit/emails.csv` is git-ignored — only the empty `audit/` directory (via `audit/.gitignore`) is tracked in version control.
+
+---
+
 ## 🪵 Logging
 
 Each pipeline stage writes structured, timestamped logs to both the console and a dedicated file under `logs/`:
@@ -439,12 +496,14 @@ Format: `%(asctime)s - %(name)s - %(levelname)s - %(message)s`
 
 ## 🗺 Roadmap
 
-- [ ] Add a `Dockerfile` + container image for deployment
-- [ ] Add CI/CD workflow (lint, test, `dvc repro` on PR)
+- [x] Add a `Dockerfile` + container image for deployment
+- [x] Add Docker Compose setup with persisted audit log volume
+- [x] Add request auditing (`audit/emails.csv`)
+- [ ] Add CI/CD workflow (lint, test, `dvc repro`, Docker build on PR)
+- [ ] Push the Docker image to a registry (Docker Hub / GHCR) as part of CI
 - [ ] Add batch prediction endpoint (`/predict/batch`)
 - [ ] Add automated test suite (`pytest`)
 - [ ] Add authentication/rate-limiting to the API
-- [ ] Model comparison: Logistic Regression vs. XGBoost
 
 ---
 
