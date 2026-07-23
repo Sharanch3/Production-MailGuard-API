@@ -2,8 +2,7 @@ name: Production MailGuard-API
 
 services:
   mailguard:
-    build: .
-    image: sharanch33/mailguard:latest
+    image: 707578706440.dkr.ecr.us-east-1.amazonaws.com/sharanch33/mailguard:latest
     container_name: mailguard
     env_file:
       - .env
